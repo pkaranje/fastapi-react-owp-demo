@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
+from pydantic import BaseModel
+from typing import List, Optional
 
 todos = [
     {
@@ -12,6 +13,12 @@ todos = [
         "item": "Cycle around town."
     }
 ]
+
+users = []
+
+class User(BaseModel):
+    username: str
+    password: str
 
 app = FastAPI()
 
@@ -74,3 +81,8 @@ async def delete_todo(id: int) -> dict:
     return {
         "data": f"Todo with id {id} not found."
     }
+
+@app.post("/signup", tags=["auth"])
+async def signup(user: User) -> dict:
+    users.append(user.dict())
+    return {"message": "User registered successfully."}
