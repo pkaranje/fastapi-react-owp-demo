@@ -1,5 +1,6 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
 
 todos = [
@@ -12,6 +13,10 @@ todos = [
         "item": "Cycle around town."
     }
 ]
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
 
 app = FastAPI()
 
@@ -74,3 +79,10 @@ async def delete_todo(id: int) -> dict:
     return {
         "data": f"Todo with id {id} not found."
     }
+
+@app.post("/login", tags=["auth"])
+async def login(request: LoginRequest):
+    # Mock authentication
+    if request.username == "admin" and request.password == "password":
+        return {"message": "Login successful", "user": "admin"}
+    raise HTTPException(status_code=401, detail="Invalid credentials")
