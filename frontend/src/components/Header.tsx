@@ -1,7 +1,12 @@
 import React from "react";
-import { Heading, Flex, Separator, Button, Link } from "@chakra-ui/react";
+import { Heading, Flex, Button, Box } from "@chakra-ui/react";
 
 const Header = () => {
+  const navigate = (path: string) => {
+    window.history.pushState({}, '', path);
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  };
+
   return (
     <Flex
       as="nav"
@@ -18,18 +23,21 @@ const Header = () => {
       zIndex="1000"
     >
       <Flex align="center" mr={5}>
-        <Heading as="h1" size="sm" cursor="pointer" onClick={() => {
-          window.history.pushState({}, '', '/');
-          window.dispatchEvent(new PopStateEvent('popstate'));
-        }}>
+        <Heading 
+          as="h1" 
+          size="sm" 
+          cursor="pointer" 
+          onClick={() => navigate('/')}
+        >
           Todos
         </Heading>
       </Flex>
       <Box>
-        <Button variant="ghost" size="sm" onClick={() => {
-          window.history.pushState({}, '', '/forgot-password');
-          window.dispatchEvent(new PopStateEvent('popstate'));
-        }}>
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={() => navigate('/forgot-password')}
+        >
           Forgot Password?
         </Button>
       </Box>
