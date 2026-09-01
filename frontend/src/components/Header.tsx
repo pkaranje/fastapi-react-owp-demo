@@ -1,5 +1,5 @@
 import React from "react";
-import { Heading, Flex, Separator } from "@chakra-ui/react";
+import { Heading, Flex, Separator, Button, Link } from "@chakra-ui/react";
 
 const Header = () => {
   return (
@@ -17,10 +17,22 @@ const Header = () => {
       right="0"
       zIndex="1000"
     >
-      <Flex align="center" as="nav" mr={5}>
-        <Heading as="h1" size="sm">Todos</Heading>
-        <Separator />
+      <Flex align="center" mr={5}>
+        <Heading as="h1" size="sm" cursor="pointer" onClick={() => {
+          window.history.pushState({}, '', '/');
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        }}>
+          Todos
+        </Heading>
       </Flex>
+      <Box>
+        <Button variant="ghost" size="sm" onClick={() => {
+          window.history.pushState({}, '', '/forgot-password');
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        }}>
+          Forgot Password?
+        </Button>
+      </Box>
     </Flex>
   );
 };

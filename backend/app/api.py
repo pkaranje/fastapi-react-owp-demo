@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, EmailStr
 
 
 todos = [
@@ -28,6 +29,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"]
 )
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
 
 
 @app.get("/", tags=["root"])
@@ -73,4 +78,13 @@ async def delete_todo(id: int) -> dict:
 
     return {
         "data": f"Todo with id {id} not found."
+    }
+
+
+@app.post("/forgot-password", tags=["auth"])
+async def forgot_password(request: ForgotPasswordRequest) -> dict:
+    # In a real app, this would send an email with a reset token/link.
+    # For this demo, we'll just return a success message.
+    return {
+        "message": f"If an account exists for {request.email}, a password reset link has been sent."
     }
