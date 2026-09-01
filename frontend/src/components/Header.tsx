@@ -16,10 +16,11 @@ const Header = () => {
       left="0"
       right="0"
       zIndex="1000"
+      height="64px"
     >
       <Flex align="center" as="nav" mr={5}>
-        <Heading as="h1" size="sm">Todos</Heading>
-        <Separator />
+        <Heading as="h1" size="sm">Todo App</Heading>
+        <Separator ml={4} />
       </Flex>
     </Flex>
   );

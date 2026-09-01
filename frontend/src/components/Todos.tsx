@@ -1,4 +1,4 @@
-import React, { useEffect, useState, createContext, useContext } from "react";
+import React, { useEffect, useState, createContext } from "react";
 import {
   Box,
   Button,
@@ -15,23 +15,27 @@ import {
   Stack,
   Text,
   DialogActionTrigger,
+  IconButton,
 } from "@chakra-ui/react";
 
 
 interface Todo {
   id: string;
   item: string;
+  status: string;
 }
 
 interface UpdateTodoProps {
   item: string;
   id: string;
+  status: string;
   fetchTodos: () => void;
 }
 
 interface TodoHelperProps {
   item: string;
   id: string;
+  status: string;
   fetchTodos: () => void;
 }
 
@@ -56,14 +60,18 @@ function AddTodo() {
     event.preventDefault()
     const newTodo = {
       "id": todos.length + 1,
-      "item": item
+      "item": item,
+      "status": "active"
     }
 
     fetch("http://localhost:8000/todo", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(newTodo)
-    }).then(fetchTodos)
+    }).then(() => {
+      setItem("");
+      fetchTodos();
+    })
   }
 
   return (
@@ -73,13 +81,15 @@ function AddTodo() {
         type="text"
         placeholder="Add a todo item"
         aria-label="Add a todo item"
+        value={item}
         onChange={handleInput}
+        mb={4}
       />
     </form>
   )
 }
 
-const UpdateTodo = ({ item, id, fetchTodos }: UpdateTodoProps) => {
+const UpdateTodo = ({ item, id, status, fetchTodos }: UpdateTodoProps) => {
   const [todo, setTodo] = useState(item);
   const updateTodo = async () => {
     await fetch(`http://localhost:8000/todo/${id}`, {
@@ -93,8 +103,8 @@ const UpdateTodo = ({ item, id, fetchTodos }: UpdateTodoProps) => {
   return (
     <DialogRoot>
       <DialogTrigger asChild>
-        <Button h="1.5rem" size="sm">
-          Update Todo
+        <Button h="1.5rem" size="sm" variant="outline">
+          Edit
         </Button>
       </DialogTrigger>
       <DialogContent
@@ -145,21 +155,37 @@ const DeleteTodo = ({ id, fetchTodos }: DeleteTodoProps) => {
   }
 
   return (
-    <Button h="1.5rem" size="sm" marginLeft={2} onClick={deleteTodo}>Delete Todo</Button>
+    <Button h="1.5rem" size="sm" marginLeft={2} colorPalette="red" onClick={deleteTodo}>Delete</Button>
   )
 }
 
-function TodoHelper({item, id, fetchTodos}: TodoHelperProps) {
+function TodoHelper({item, id, status, fetchTodos}: TodoHelperProps) {
+  const toggleStatus = async () => {
+    const newStatus = status === "active" ? "completed" : "active";
+    await fetch(`http://localhost:8000/todo/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: newStatus }),
+    });
+    await fetchTodos();
+  }
+
   return (
-    <Box p={1} shadow="sm">
-      <Flex justify="space-between">
-        <Text mt={4} as="div">
-          {item}
-          <Flex align="end">
-            <UpdateTodo item={item} id={id} fetchTodos={fetchTodos}/>
-            <DeleteTodo id={id} fetchTodos={fetchTodos}/>  {/* new */}
-          </Flex>
-        </Text>
+    <Box p={3} shadow="sm" border="1px solid" borderColor="gray.100" rounded="md">
+      <Flex justify="space-between" align="center">
+        <Box>
+           <Text fontWeight="medium" textDecoration={status === "completed" ? "line-through" : "none"}>
+            {item}
+          </Text>
+          <Text fontSize="xs" color="gray.500">{status}</Text>
+        </Box>
+        <Flex align="center" gap={2}>
+          <Button h="1.5rem" size="sm" onClick={toggleStatus} colorPalette={status === "active" ? "green" : "orange"}>
+            {status === "active" ? "Complete" : "Undo"}
+          </Button>
+          <UpdateTodo item={item} id={id} status={status} fetchTodos={fetchTodos}/>
+          <DeleteTodo id={id} fetchTodos={fetchTodos}/>
+        </Flex>
       </Flex>
     </Box>
   )
@@ -169,8 +195,8 @@ export default function Todos() {
   const [todos, setTodos] = useState([])
   const fetchTodos = async () => {
     const response = await fetch("http://localhost:8000/todo")
-    const todos = await response.json()
-    setTodos(todos.data)
+    const data = await response.json()
+    setTodos(data.data)
   }
   useEffect(() => {
     fetchTodos()
@@ -178,12 +204,12 @@ export default function Todos() {
 
   return (
     <TodosContext.Provider value={{todos, fetchTodos}}>
-      <Container maxW="container.xl" pt="100px">
+      <Container maxW="container.md">
         <AddTodo />
-        <Stack gap={5}>
+        <Stack gap={3}>
             {
-            todos.map((todo) => (
-                <TodoHelper item={todo.item} id={todo.id} fetchTodos={fetchTodos}/>
+            todos.map((todo: Todo) => (
+                <TodoHelper key={todo.id} item={todo.item} id={todo.id} status={todo.status} fetchTodos={fetchTodos}/>
             ))
             }
         </Stack>
