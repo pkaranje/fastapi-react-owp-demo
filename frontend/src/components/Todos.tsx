@@ -1,4 +1,4 @@
-import React, { useEffect, useState, createContext, useContext } from "react";
+import React, { useEffect, useState, createContext } from "react";
 import {
   Box,
   Button,
@@ -15,12 +15,14 @@ import {
   Stack,
   Text,
   DialogActionTrigger,
+  Checkbox,
 } from "@chakra-ui/react";
 
 
 interface Todo {
   id: string;
   item: string;
+  completed: boolean;
 }
 
 interface UpdateTodoProps {
@@ -32,6 +34,7 @@ interface UpdateTodoProps {
 interface TodoHelperProps {
   item: string;
   id: string;
+  completed: boolean;
   fetchTodos: () => void;
 }
 
@@ -55,15 +58,19 @@ function AddTodo() {
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const newTodo = {
-      "id": todos.length + 1,
-      "item": item
+      "id": (todos.length + 1).toString(),
+      "item": item,
+      "completed": false
     }
 
     fetch("http://localhost:8000/todo", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(newTodo)
-    }).then(fetchTodos)
+    }).then(() => {
+        setItem("");
+        fetchTodos();
+    })
   }
 
   return (
@@ -73,6 +80,7 @@ function AddTodo() {
         type="text"
         placeholder="Add a todo item"
         aria-label="Add a todo item"
+        value={item}
         onChange={handleInput}
       />
     </form>
@@ -139,7 +147,6 @@ const DeleteTodo = ({ id, fetchTodos }: DeleteTodoProps) => {
     await fetch(`http://localhost:8000/todo/${id}`, {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: id })
     })
     await fetchTodos()
   }
@@ -149,28 +156,39 @@ const DeleteTodo = ({ id, fetchTodos }: DeleteTodoProps) => {
   )
 }
 
-function TodoHelper({item, id, fetchTodos}: TodoHelperProps) {
+function TodoHelper({item, id, completed, fetchTodos}: TodoHelperProps) {
+  const toggleComplete = async () => {
+    await fetch(`http://localhost:8000/todo/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ completed: !completed }),
+    });
+    fetchTodos();
+  };
+
   return (
     <Box p={1} shadow="sm">
-      <Flex justify="space-between">
-        <Text mt={4} as="div">
-          {item}
-          <Flex align="end">
+      <Flex justify="space-between" align="center">
+        <Flex align="center" gap={3}>
+            <Checkbox checked={completed} onChange={toggleComplete} />
+            <Text textDecoration={completed ? "line-through" : "none"}>{item}</Text>
+        </Flex>
+        <Flex align="center">
             <UpdateTodo item={item} id={id} fetchTodos={fetchTodos}/>
-            <DeleteTodo id={id} fetchTodos={fetchTodos}/>  {/* new */}
-          </Flex>
-        </Text>
+            <DeleteTodo id={id} fetchTodos={fetchTodos}/>
+        </Flex>
       </Flex>
     </Box>
   )
 }
 
-export default function Todos() {
+export default function Todos({ onTodosUpdate }: { onTodosUpdate?: (todos: any[]) => void }) {
   const [todos, setTodos] = useState([])
   const fetchTodos = async () => {
     const response = await fetch("http://localhost:8000/todo")
-    const todos = await response.json()
-    setTodos(todos.data)
+    const data = await response.json()
+    setTodos(data.data)
+    if (onTodosUpdate) onTodosUpdate(data.data)
   }
   useEffect(() => {
     fetchTodos()
@@ -178,12 +196,12 @@ export default function Todos() {
 
   return (
     <TodosContext.Provider value={{todos, fetchTodos}}>
-      <Container maxW="container.xl" pt="100px">
+      <Container maxW="container.xl" pt="50px">
         <AddTodo />
-        <Stack gap={5}>
+        <Stack gap={5} mt={5}>
             {
-            todos.map((todo) => (
-                <TodoHelper item={todo.item} id={todo.id} fetchTodos={fetchTodos}/>
+            todos.map((todo: any) => (
+                <TodoHelper key={todo.id} item={todo.item} id={todo.id} completed={todo.completed} fetchTodos={fetchTodos}/>
             ))
             }
         </Stack>
