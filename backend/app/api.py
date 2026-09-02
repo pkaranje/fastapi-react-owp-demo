@@ -5,11 +5,13 @@ from fastapi.middleware.cors import CORSMiddleware
 todos = [
     {
         "id": "1",
-        "item": "Read a book."
+        "item": "Read a book.",
+        "completed": False
     },
     {
         "id": "2",
-        "item": "Cycle around town."
+        "item": "Cycle around town.",
+        "completed": True
     }
 ]
 
@@ -42,6 +44,8 @@ async def get_todos() -> dict:
 
 @app.post("/todo", tags=["todos"])
 async def add_todo(todo: dict) -> dict:
+    if "completed" not in todo:
+        todo["completed"] = False
     todos.append(todo)
     return {
         "data": { "Todo added." }
@@ -52,7 +56,10 @@ async def add_todo(todo: dict) -> dict:
 async def update_todo(id: int, body: dict) -> dict:
     for todo in todos:
         if int(todo["id"]) == id:
-            todo["item"] = body["item"]
+            if "item" in body:
+                todo["item"] = body["item"]
+            if "completed" in body:
+                todo["completed"] = body["completed"]
             return {
                 "data": f"Todo with id {id} has been updated."
             }

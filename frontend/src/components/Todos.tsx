@@ -15,23 +15,27 @@ import {
   Stack,
   Text,
   DialogActionTrigger,
+  Checkbox,
 } from "@chakra-ui/react";
 
 
 interface Todo {
   id: string;
   item: string;
+  completed: boolean;
 }
 
 interface UpdateTodoProps {
   item: string;
   id: string;
+  completed: boolean;
   fetchTodos: () => void;
 }
 
 interface TodoHelperProps {
   item: string;
   id: string;
+  completed: boolean;
   fetchTodos: () => void;
 }
 
@@ -55,8 +59,9 @@ function AddTodo() {
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const newTodo = {
-      "id": todos.length + 1,
-      "item": item
+      "id": (todos.length + 1).toString(),
+      "item": item,
+      "completed": false
     }
 
     fetch("http://localhost:8000/todo", {
@@ -74,6 +79,7 @@ function AddTodo() {
         placeholder="Add a todo item"
         aria-label="Add a todo item"
         onChange={handleInput}
+        mb="4"
       />
     </form>
   )
@@ -149,17 +155,34 @@ const DeleteTodo = ({ id, fetchTodos }: DeleteTodoProps) => {
   )
 }
 
-function TodoHelper({item, id, fetchTodos}: TodoHelperProps) {
+function TodoHelper({item, id, completed, fetchTodos}: TodoHelperProps) {
+  const toggleComplete = async () => {
+    await fetch(`http://localhost:8000/todo/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ completed: !completed }),
+    });
+    await fetchTodos();
+  };
+
   return (
-    <Box p={1} shadow="sm">
-      <Flex justify="space-between">
-        <Text mt={4} as="div">
-          {item}
-          <Flex align="end">
-            <UpdateTodo item={item} id={id} fetchTodos={fetchTodos}/>
-            <DeleteTodo id={id} fetchTodos={fetchTodos}/>  {/* new */}
-          </Flex>
-        </Text>
+    <Box p={3} shadow="sm" border="1px solid" borderColor="gray.100" rounded="md">
+      <Flex justify="space-between" align="center">
+        <Flex align="center" gap="3">
+          <input 
+            type="checkbox" 
+            checked={completed} 
+            onChange={toggleComplete} 
+            style={{ width: '20px', height: '20px' }}
+          />
+          <Text textDecoration={completed ? "line-through" : "none"} color={completed ? "gray.500" : "black"}>
+            {item}
+          </Text>
+        </Flex>
+        <Flex>
+          <UpdateTodo item={item} id={id} completed={completed} fetchTodos={fetchTodos}/>
+          <DeleteTodo id={id} fetchTodos={fetchTodos}/>
+        </Flex>
       </Flex>
     </Box>
   )
@@ -180,10 +203,10 @@ export default function Todos() {
     <TodosContext.Provider value={{todos, fetchTodos}}>
       <Container maxW="container.xl" pt="100px">
         <AddTodo />
-        <Stack gap={5}>
+        <Stack gap={3}>
             {
             todos.map((todo) => (
-                <TodoHelper item={todo.item} id={todo.id} fetchTodos={fetchTodos}/>
+                <TodoHelper key={todo.id} item={todo.item} id={todo.id} completed={todo.completed} fetchTodos={fetchTodos}/>
             ))
             }
         </Stack>
