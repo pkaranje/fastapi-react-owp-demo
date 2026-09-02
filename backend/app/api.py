@@ -1,5 +1,6 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
 
 todos = [
@@ -12,6 +13,13 @@ todos = [
         "item": "Cycle around town."
     }
 ]
+
+# Mock user storage
+users = []
+
+class UserSignup(BaseModel):
+    email: str
+    password: str
 
 app = FastAPI()
 
@@ -74,3 +82,12 @@ async def delete_todo(id: int) -> dict:
     return {
         "data": f"Todo with id {id} not found."
     }
+
+@app.post("/signup", tags=["auth"])
+async def signup(user: UserSignup) -> dict:
+    # Check if user already exists
+    if any(u["email"] == user.email for u in users):
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    users.append({"email": user.email, "password": user.password})
+    return {"message": "User registered successfully"}
