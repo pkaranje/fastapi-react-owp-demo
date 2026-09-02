@@ -1,4 +1,4 @@
-import React, { useEffect, useState, createContext, useContext } from "react";
+import React, { useEffect, useState, createContext } from "react";
 import {
   Box,
   Button,
@@ -15,23 +15,27 @@ import {
   Stack,
   Text,
   DialogActionTrigger,
+  Checkbox,
 } from "@chakra-ui/react";
 
 
 interface Todo {
   id: string;
   item: string;
+  completed: boolean;
 }
 
 interface UpdateTodoProps {
   item: string;
   id: string;
+  completed: boolean;
   fetchTodos: () => void;
 }
 
 interface TodoHelperProps {
   item: string;
   id: string;
+  completed: boolean;
   fetchTodos: () => void;
 }
 
@@ -41,7 +45,7 @@ interface DeleteTodoProps {
 }
 
 const TodosContext = createContext({
-  todos: [], fetchTodos: () => {}
+  todos: [] as Todo[], fetchTodos: () => {}
 })
 
 function AddTodo() {
@@ -55,15 +59,19 @@ function AddTodo() {
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const newTodo = {
-      "id": todos.length + 1,
-      "item": item
+      "id": (todos.length + 1).toString(),
+      "item": item,
+      "completed": false
     }
 
     fetch("http://localhost:8000/todo", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(newTodo)
-    }).then(fetchTodos)
+    }).then(() => {
+      setItem("");
+      fetchTodos();
+    })
   }
 
   return (
@@ -73,6 +81,7 @@ function AddTodo() {
         type="text"
         placeholder="Add a todo item"
         aria-label="Add a todo item"
+        value={item}
         onChange={handleInput}
       />
     </form>
@@ -149,41 +158,69 @@ const DeleteTodo = ({ id, fetchTodos }: DeleteTodoProps) => {
   )
 }
 
-function TodoHelper({item, id, fetchTodos}: TodoHelperProps) {
+function TodoHelper({item, id, completed, fetchTodos}: TodoHelperProps) {
+  const toggleComplete = async () => {
+    await fetch(`http://localhost:8000/todo/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ completed: !completed }),
+    });
+    await fetchTodos();
+  };
+
   return (
-    <Box p={1} shadow="sm">
-      <Flex justify="space-between">
-        <Text mt={4} as="div">
-          {item}
-          <Flex align="end">
-            <UpdateTodo item={item} id={id} fetchTodos={fetchTodos}/>
-            <DeleteTodo id={id} fetchTodos={fetchTodos}/>  {/* new */}
-          </Flex>
-        </Text>
+    <Box p={3} shadow="sm" borderWidth="1px" borderRadius="md">
+      <Flex justify="space-between" align="center">
+        <Flex align="center">
+          <Checkbox 
+            checked={completed} 
+            onChange={toggleComplete} 
+            mr={3}
+          />
+          <Text textDecoration={completed ? "line-through" : "none"}>
+            {item}
+          </Text>
+        </Flex>
+        <Flex>
+          <UpdateTodo item={item} id={id} completed={completed} fetchTodos={fetchTodos}/>
+          <DeleteTodo id={id} fetchTodos={fetchTodos}/>
+        </Flex>
       </Flex>
     </Box>
   )
 }
 
-export default function Todos() {
-  const [todos, setTodos] = useState([])
+interface TodosProps {
+  filter: "all" | "active" | "completed";
+}
+
+export default function Todos({ filter }: TodosProps) {
+  const [todos, setTodos] = useState<Todo[]>([])
   const fetchTodos = async () => {
     const response = await fetch("http://localhost:8000/todo")
-    const todos = await response.json()
-    setTodos(todos.data)
+    const data = await response.json()
+    setTodos(data.data)
   }
   useEffect(() => {
     fetchTodos()
   }, [])
 
+  const filteredTodos = todos.filter(todo => {
+    if (filter === "active") return !todo.completed;
+    if (filter === "completed") return todo.completed;
+    return true;
+  });
+
   return (
     <TodosContext.Provider value={{todos, fetchTodos}}>
-      <Container maxW="container.xl" pt="100px">
-        <AddTodo />
-        <Stack gap={5}>
+      <Container maxW="container.md" pt="20px">
+        <Box mb={8}>
+            <AddTodo />
+        </Box>
+        <Stack gap={3}>
             {
-            todos.map((todo) => (
-                <TodoHelper item={todo.item} id={todo.id} fetchTodos={fetchTodos}/>
+            filteredTodos.map((todo) => (
+                <TodoHelper key={todo.id} item={todo.item} id={todo.id} completed={todo.completed} fetchTodos={fetchTodos}/>
             ))
             }
         </Stack>
