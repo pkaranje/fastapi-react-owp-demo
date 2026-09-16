@@ -40,6 +40,12 @@ async def get_todos() -> dict:
     return { "data": todos }
 
 
+@app.post("/greet", tags=["greeting"])
+async def greet(body: dict) -> dict:
+    name = body.get("name", "World")
+    return {"message": f"Hello, {name}!"}
+
+
 @app.post("/todo", tags=["todos"])
 async def add_todo(todo: dict) -> dict:
     todos.append(todo)
