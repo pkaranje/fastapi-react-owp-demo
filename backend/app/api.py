@@ -35,6 +35,11 @@ async def read_root() -> dict:
     return {"message": "Welcome to your todo list."}
 
 
+@app.get("/message", tags=["message"])
+async def get_message() -> dict:
+    return {"message": "Hello from User!"}
+
+
 @app.get("/todo", tags=["todos"])
 async def get_todos() -> dict:
     return { "data": todos }
